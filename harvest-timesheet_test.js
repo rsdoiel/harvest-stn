@@ -19,7 +19,7 @@ var assert = require("assert"),
             "--start=2013-01-04 00:00:00",
             "--end=2013-02-26 23:59:59",
             "--input=TimeSheet.txt",
-            "--map=harvest.map",
+            "--subdomain=tinyCo.example.com",
             "--user=jdoe@example.com:password"
         ],
         cmd,

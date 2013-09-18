@@ -12,6 +12,7 @@ var fs = require("fs"),
     url = require("url"),
     nopt = require("nopt"),
     stn = require("stn"),
+    Harvest = require("harvest"),
     timesheet;
 
 
@@ -21,6 +22,7 @@ function Timesheet() {
                 "USAGE: harvest-timesheet",
                 "--start=1902-01-04 --end=1902-02-26",
                 "--input=TimeSheet.txt",
+                "--subdomain=example.harvesthq.com",
                 "--user=jdoe@example.com:password"
             ].join(" "),
             echo = console.log;
@@ -44,8 +46,8 @@ function Timesheet() {
                 "start": Date,
                 "end": Date,
                 "input": path,
+                "subdomain": String,
                 "user": String,
-                "password": String,
                 "help": null,
                 "dry run": null
             },
@@ -53,9 +55,10 @@ function Timesheet() {
                 "s": [ "--start" ],
                 "e": ["--end"],
                 "i": ["--input"],
+                "d": ["--subdomain"],
                 "u": ["--user"],
                 "h": ["--help"],
-                "d": ["--dry-run"]
+                "t": ["--dry-run"]
             },
             dry_run = false,
             now = new Date(),
@@ -64,6 +67,7 @@ function Timesheet() {
             filename,
             start,
             end,
+            subdomain,
             connect,
             c = 0;
     
@@ -102,10 +106,17 @@ function Timesheet() {
         } else {
             filename = "TimeSheet.txt";
         }
+        c = cmd.argv.cooked.indexOf("--subdomain") + 1;
+        if (c > 0) {
+            subdomain = cmd.argv.cooked[c].trim();
+        } else {
+            subdomain = "test.harvestapp.com";
+        }
         if (cmd.argv.cooked.indexOf("--dry-run") > -1) {
             dry_run = true;
         }
         return {
+            subdomain: subdomain,
             connect: connect,
             start: start,
             end: end,
@@ -143,13 +154,28 @@ function Timesheet() {
         return response;
     }
 
-    function send(data) {
-        // FIXME: need to send the RESTful transaction
-        throw ("send() not implemented");
+    function mkConnection(request) {
+        var cmd = request.cmd,
+            email,
+            password;
+        
+        email = cmd.connect.substr(0, cmd.connect.indexOf(':'));
+        password = cmd.connect.substr(email.length + 1);
+        return {
+            subdomain: request.subdomain,
+            email: email,
+            password: password
+        };
+    }
+
+    function send(request) {
+        console.log("DEBUG send() request", JSON.stringify(request, null, 2));
+        console.log("DEBUG mkConfig", JSON.stringify(mkConnection(request), null, 2));
+        throw ("send() need tests and implementation");
     }
     
     function runCommandLine(cmd) {
-        var response;
+        var request;
         
         if (!cmd.connect) {
             help(1, "ERROR: Missing Harvest connection string.");
@@ -166,12 +192,12 @@ function Timesheet() {
             }
             src = buf.toString();
             // generate and send data to harvest.
-            response = assemble(cmd, src);
+            request = assemble(cmd, src);
             if (cmd.dry_run === true) {
-                console.log(JSON.stringify(response, null, 2));
-                return response;
+                console.log(JSON.stringify(request, null, 2));
+                return request;
             } else {
-                return send(response);
+                return send(request);
             }
         });
     }
