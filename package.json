@@ -2,9 +2,12 @@
   "name": "harvest-timesheet",
   "version": "0.0.0",
   "description": "A harvest client for importing content in Simple Timesheet Notation.",
-  "main": "index.js",
+  "main": "harvest-timesheet.js",
+  "bin": {
+    "harvest-timesheet": "./harvest-timesheet.js"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node harvest-timesheet_test.js"
   },
   "repository": {
     "type": "git",
@@ -14,5 +17,9 @@
   "license": "BSD-2-Clause",
   "bugs": {
     "url": "https://github.com/rsdoiel/harvest-timesheet/issues"
+  },
+  "dependencies": {
+    "stn": "0.0.11",
+    "nopt": "~2.1.2"
   }
 }
