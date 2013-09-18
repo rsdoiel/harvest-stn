@@ -19,26 +19,43 @@ var assert = require("assert"),
             "--start=2013-01-04 00:00:00",
             "--end=2013-02-26 23:59:59",
             "--input=TimeSheet.txt",
-            "--subdomain=tinyCo.example.com",
-            "--user=jdoe@example.com:password"
+            "--connect=harvest://jdoe%40example.com:password@example.harvestapp.com"
         ],
         cmd,
         result,
         src = fs.readFileSync("test-data/TimeSheet.txt").toString(),
         expected = {
-            connect: 'jdoe@example.com:password',
+            connect: {
+                subdomain: 'example.harvestapp.com',
+                email: 'jdoe@example.com',
+                password: 'password'
+            },
             start: new Date("2013-01-04 00:00:00"),
             end: new Date("2013-02-26 23:59:59"),
             filename: 'TimeSheet.txt'
+        },
+        connect,
+        expected_connect = {
+            subdomain: "example.harvestapp.com",
+            email: "jdoe@example.com",
+            password: "password"
         };
     
     // Make sure command line parsing is working.
     assert.ok(timesheet);
     assert.strictEqual("function", typeof timesheet.parseCommandLine);
     assert.strictEqual("function", typeof timesheet.runCommandLine);
+    assert.strictEqual("function", typeof timesheet.mkConnection);
+    
+    connect = timesheet.mkConnection("harvest://jdoe%40example.com:password@example.harvestapp.com");
+    assert.strictEqual(expected_connect.subdomain, connect.subdomain);
+    assert.strictEqual(expected_connect.email, connect.email);
+    assert.strictEqual(expected_connect.password, connect.password);
 
     result = timesheet.parseCommandLine(input);
-    assert.strictEqual(expected.connect, result.connect);
+    assert.strictEqual(expected.connect.subdomain, result.connect.subdomain);
+    assert.strictEqual(expected.connect.email, result.connect.email);
+    assert.strictEqual(expected.connect.password, result.connect.password);
     assert.strictEqual(expected.start.toString(), result.start.toString());
     assert.strictEqual(expected.end.toString(), result.end.toString());
     assert.strictEqual(expected.filename, result.filename);
@@ -46,7 +63,9 @@ var assert = require("assert"),
 
     result = timesheet.parseCommandLine(input);
 
-    assert.strictEqual(expected.connect, result.connect);
+    assert.strictEqual(expected.connect.subdomain, result.connect.subdomain);
+    assert.strictEqual(expected.connect.email, result.connect.email);
+    assert.strictEqual(expected.connect.password, result.connect.password);
     assert.strictEqual(expected.start.toString(), result.start.toString());
     assert.strictEqual(expected.end.toString(), result.end.toString());
     assert.strictEqual(expected.filename, result.filename);

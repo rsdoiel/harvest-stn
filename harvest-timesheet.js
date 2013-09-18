@@ -22,8 +22,7 @@ function Timesheet() {
                 "USAGE: harvest-timesheet",
                 "--start=1902-01-04 --end=1902-02-26",
                 "--input=TimeSheet.txt",
-                "--subdomain=example.harvesthq.com",
-                "--user=jdoe@example.com:password"
+                "--connect=harvest://jdoe%40example.com:password@example.harvestapp.com"
             ].join(" "),
             echo = console.log;
         
@@ -41,13 +40,29 @@ function Timesheet() {
         process.exit(exit_code);
     }
 
+    
+    function mkConnection(connect) {
+        var uri = url.parse(connect),
+            email = "",
+            password = "";
+
+        if (uri.auth !== null) {
+            email = uri.auth.substr(0, uri.auth.indexOf(':'));
+            password = uri.auth.substr(email.length + 1);
+        }
+        return {
+            subdomain: uri.hostname,
+            email: email,
+            password: password
+        };
+    }
+
     function parseCommandLine(argv) {
         var knownOptions = {
                 "start": Date,
                 "end": Date,
                 "input": path,
-                "subdomain": String,
-                "user": String,
+                "connect": url,
                 "help": null,
                 "dry run": null
             },
@@ -55,8 +70,7 @@ function Timesheet() {
                 "s": [ "--start" ],
                 "e": ["--end"],
                 "i": ["--input"],
-                "d": ["--subdomain"],
-                "u": ["--user"],
+                "c": ["--connect"],
                 "h": ["--help"],
                 "t": ["--dry-run"]
             },
@@ -67,7 +81,6 @@ function Timesheet() {
             filename,
             start,
             end,
-            subdomain,
             connect,
             c = 0;
     
@@ -92,31 +105,26 @@ function Timesheet() {
         } else {
             end = new Date(today + " 23:59:59");
         }
-        c = cmd.argv.cooked.indexOf("--user") + 1;
-        if (c > 0) {
-            connect = cmd.argv.cooked[c].trim();
-        } else if (process.env.HARVEST_CONNECT) {
-            connect = process.env.HARVEST_CONNECT;
-        } else {
-            connect = "";
-        }
         c = cmd.argv.cooked.indexOf("--input") + 1;
         if (c > 0) {
-            filename = cmd.argv.cooked[c].trim();
+            filename = cmd.argv.cooked[c];
         } else {
             filename = "TimeSheet.txt";
         }
-        c = cmd.argv.cooked.indexOf("--subdomain") + 1;
+        c = cmd.argv.cooked.indexOf('--connect') + 1;
         if (c > 0) {
-            subdomain = cmd.argv.cooked[c].trim();
+            connect = mkConnection(cmd.argv.cooked[c]);
+            console.log("DEBUG parseCommandLine()", c, cmd.argv.cooked[c]);
+            console.log("DEBUG ---> connect", connect);
+        } else if (process.env.HARVEST_CONNECT) {
+            connect = mkConnection(process.env.HARVEST_CONNECT);
         } else {
-            subdomain = "test.harvestapp.com";
+            help(1, "ERROR: Can't find connection URI");
         }
         if (cmd.argv.cooked.indexOf("--dry-run") > -1) {
             dry_run = true;
         }
         return {
-            subdomain: subdomain,
             connect: connect,
             start: start,
             end: end,
@@ -154,32 +162,14 @@ function Timesheet() {
         return response;
     }
 
-    function mkConnection(request) {
-        var cmd = request.cmd,
-            email,
-            password;
-        
-        email = cmd.connect.substr(0, cmd.connect.indexOf(':'));
-        password = cmd.connect.substr(email.length + 1);
-        return {
-            subdomain: request.subdomain,
-            email: email,
-            password: password
-        };
-    }
-
     function send(request) {
         console.log("DEBUG send() request", JSON.stringify(request, null, 2));
-        console.log("DEBUG mkConfig", JSON.stringify(mkConnection(request), null, 2));
         throw ("send() need tests and implementation");
     }
     
     function runCommandLine(cmd) {
         var request;
         
-        if (!cmd.connect) {
-            help(1, "ERROR: Missing Harvest connection string.");
-        }
         if (cmd.filename.indexOf('~') === 0) {
             cmd.filename = path.join(process.env.HOME, cmd.filename.substr(1));
         }
@@ -203,6 +193,7 @@ function Timesheet() {
     }
     return {
         help: help,
+        mkConnection: mkConnection,
         parseCommandLine: parseCommandLine,
         assemble: assemble,
         send: send,
