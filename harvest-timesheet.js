@@ -2,7 +2,8 @@
  * harvest-timesheet.js - a command line tool to import Simple Timesheet Notation into Harvest.
  * @author R. S. Doiel, <rsdoiel@gmail.com>
  * copyright (c) 2013 all rights reserved
- * Licensed under the BSD 2-clause license (see: http://opensource.org/licenses/BSD-2-Clause)
+ * Released under the BSD 2-clause license
+ * (see: http://opensource.org/licenses/BSD-2-Clause)
  */
 /*jslint node: true, indent: 4 */
 "use strict";
@@ -15,165 +16,182 @@ var fs = require("fs"),
 
 
 function Timesheet() {
-    var TS = this;
-    return {
-        help: function (exit_code, msg) {
-            var usage = [
-                    "USAGE: harvest-timesheet",
-                    "--start=1902-01-04 --end=1902-02-26",
-                    "--input=TimeSheet.txt --map=TimeSheet.map",
-                    "--user=jdoe@example.com:password"
-                ].join(" "),
-                echo = console.log;
-            
-            if (exit_code === undefined) {
-                exit_code = 0;
-            }
-            if (exit_code > 0) {
-                echo = console.error;
-            }
-
-            echo(usage);
-            if (msg) {
-                echo(msg);
-            }
-            process.exit(exit_code);
-        },
-        parseCommandLine: function (argv) {
-            var knownOptions = {
-                    "start": Date,
-                    "end": Date,
-                    "input": path,
-                    "map": path,
-                    "user": String,
-                    "password": String,
-                    "help": null
-                },
-                shortHands = {
-                    "s": [ "--start" ],
-                    "e": ["--end"],
-                    "i": ["--input"],
-                    "m": ["--map"],
-                    "u": ["--user"],
-                    "h": ["--help"]
-                },
-                now = new Date(),
-                today,
-                cmd,
-                filename,
-                mapname,
-                start,
-                end,
-                connect,
-                c = 0;
-
-            today = [
-                now.getFullYear(),
-                (" 0" + (now.getMonth() + 1)).substr(-2),
-                (" 0" + now.getDate()).substr(-2)
-            ].join("-");
-            cmd = nopt(knownOptions, shortHands, argv);
-            if (cmd.argv.cooked.indexOf("--help") > -1) {
-                timesheet.help();
-            }
-            c = cmd.argv.cooked.indexOf("--start") + 1;
-            if (c > 0) {
-                start = new Date(cmd.argv.cooked[c]);
-            } else {
-                start = new Date(today + " 00:00:00");
-            }
-            c = cmd.argv.cooked.indexOf("--end") + 1;
-            if (c > 0) {
-                end = new Date(cmd.argv.cooked[c]);
-            } else {
-                end = new Date(today + " 23:59:59");
-            }
-            c = cmd.argv.cooked.indexOf("--map") + 1;
-            if (c > 0) {
-                mapname = cmd.argv.cooked[c];
-            } else {
-                mapname = "harvest.map";
-            }
-            c = cmd.argv.cooked.indexOf("--user") + 1;
-            if (c > 0) {
-                connect = cmd.argv.cooked[c].trim();
-            } else if (process.env.HARVEST_CONNECT) {
-                connect = process.env.HARVEST_CONNECT;
-            } else {
-                connect = "";
-            }
-            c = cmd.argv.cooked.indexOf("--input") + 1;
-            if (c > 0) {
-                filename = cmd.argv.cooked[c].trim();
-            } else {
-                filename = "TimeSheet.txt";
-            }
-            return {
-                connect: connect,
-                start: start,
-                end: end,
-                filename: filename,
-                mapname: mapname
-            };
-        },
-        assemble: function (cmd, src, map) {
-            var response = {
-                    cmd: cmd,
-                    timesheet: {},
-                    error: false
-                };
-
-            try {
-                response.timesheet = stn.parse(src, map);
-            } catch (err) {
-                response.error = true;
-                response.error_msg = "ERROR: Can't parse timesheet " + err;
-            }
-            
-            return response;
-        },
-        send: function (data) {
-            // FIXME: need to send the RESTful transaction
-            throw ("send() not implemented");
-        },
-        runCommandLine: function (cmd) {
-            var self = this;
-
-            if (!cmd.connect) {
-                this.help(1, "ERROR: Missing Harvest connection string.");
-            }
-            fs.readFile(cmd.mapname, function (err, buf) {
-                var map;
-                if (err) {
-                    //FIXME: use default map
-                    this.help(1, "ERROR: Can't read " + cmd.mapname + "\n" + err);
-                }
-                try {
-                    map = JSON.parse(buf.toString());
-                } catch (eMapParse) {
-                    this.help(1, "ERROR: Can't parse " + cmd.mapname);
-                }
-                fs.readFile(cmd.filename, function (err, buf) {
-                    var src,
-                        data;
-                    
-                    if (err) {
-                        this.help(1, "ERROR: Can't read " + cmd.filename);
-                    }
-                    src = buf.toString();
-                    // generate and send data to harvest.
-                    self.send(self.assemble(cmd, src, map));
-                });
-            });
+    function help(exit_code, msg) {
+        var usage = [
+                "USAGE: harvest-timesheet",
+                "--start=1902-01-04 --end=1902-02-26",
+                "--input=TimeSheet.txt",
+                "--user=jdoe@example.com:password"
+            ].join(" "),
+            echo = console.log;
+        
+        if (exit_code === undefined) {
+            exit_code = 0;
         }
+        if (exit_code > 0) {
+            echo = console.error;
+        }
+
+        echo(usage);
+        if (msg) {
+            echo(msg);
+        }
+        process.exit(exit_code);
+    }
+
+    function parseCommandLine(argv) {
+        var knownOptions = {
+                "start": Date,
+                "end": Date,
+                "input": path,
+                "user": String,
+                "password": String,
+                "help": null,
+                "dry run": null
+            },
+            shortHands = {
+                "s": [ "--start" ],
+                "e": ["--end"],
+                "i": ["--input"],
+                "u": ["--user"],
+                "h": ["--help"],
+                "d": ["--dry-run"]
+            },
+            dry_run = false,
+            now = new Date(),
+            today,
+            cmd,
+            filename,
+            start,
+            end,
+            connect,
+            c = 0;
+    
+        today = [
+            now.getFullYear(),
+            (" 0" + (now.getMonth() + 1)).substr(-2),
+            (" 0" + now.getDate()).substr(-2)
+        ].join("-");
+        cmd = nopt(knownOptions, shortHands, argv);
+        if (cmd.argv.cooked.indexOf("--help") > -1) {
+            timesheet.help();
+        }
+        c = cmd.argv.cooked.indexOf("--start") + 1;
+        if (c > 0) {
+            start = new Date(cmd.argv.cooked[c]);
+        } else {
+            start = new Date(today + " 00:00:00");
+        }
+        c = cmd.argv.cooked.indexOf("--end") + 1;
+        if (c > 0) {
+            end = new Date(cmd.argv.cooked[c]);
+        } else {
+            end = new Date(today + " 23:59:59");
+        }
+        c = cmd.argv.cooked.indexOf("--user") + 1;
+        if (c > 0) {
+            connect = cmd.argv.cooked[c].trim();
+        } else if (process.env.HARVEST_CONNECT) {
+            connect = process.env.HARVEST_CONNECT;
+        } else {
+            connect = "";
+        }
+        c = cmd.argv.cooked.indexOf("--input") + 1;
+        if (c > 0) {
+            filename = cmd.argv.cooked[c].trim();
+        } else {
+            filename = "TimeSheet.txt";
+        }
+        if (cmd.argv.cooked.indexOf("--dry-run") > -1) {
+            dry_run = true;
+        }
+        return {
+            connect: connect,
+            start: start,
+            end: end,
+            filename: filename,
+            dry_run: dry_run
+        };
+    }
+    
+    function assemble(cmd, src, map) {
+        var response = {
+                cmd: cmd,
+                timesheet: {},
+                error: false,
+                error_msg: null
+            },
+            date_range,
+            data;
+
+        try {
+            data = stn.parse(src);
+        } catch (err) {
+            response.error = true;
+            response.error_msg = "ERROR: Can't parse timesheet " + err;
+        }
+        // Filter for desired date range
+        date_range = Object.keys(data);
+        date_range.forEach(function (ky) {
+            var timestamp = new Date(ky);
+
+            if (timestamp >= cmd.start &&
+                    timestamp <= cmd.end) {
+                response.timesheet[ky] = data[ky];
+            }
+        });
+        return response;
+    }
+
+    function send(data) {
+        // FIXME: need to send the RESTful transaction
+        throw ("send() not implemented");
+    }
+    
+    function runCommandLine(cmd) {
+        var response;
+        
+        if (!cmd.connect) {
+            help(1, "ERROR: Missing Harvest connection string.");
+        }
+        if (cmd.filename.indexOf('~') === 0) {
+            cmd.filename = path.join(process.env.HOME, cmd.filename.substr(1));
+        }
+        fs.readFile(cmd.filename, function (err, buf) {
+            var src,
+                data;
+            
+            if (err) {
+                help(1, "ERROR: Can't read " + cmd.filename + " " + err);
+            }
+            src = buf.toString();
+            // generate and send data to harvest.
+            response = assemble(cmd, src);
+            if (cmd.dry_run === true) {
+                console.log(JSON.stringify(response, null, 2));
+                return response;
+            } else {
+                return send(response);
+            }
+        });
+    }
+    return {
+        help: help,
+        parseCommandLine: parseCommandLine,
+        assemble: assemble,
+        send: send,
+        runCommandLine: runCommandLine
     };
 }
+// Decorate with a modern style constructor
+Timesheet.create = function () {
+    return new Timesheet();
+};
 
 if (!module.parent) {
-    timesheet = new Timesheet();
-    console.log("DEBUG", timesheet);
+    timesheet = Timesheet.create();
     timesheet.runCommandLine(timesheet.parseCommandLine(process.argv));
 }
 
+exports.create = Timesheet.create;
 exports.Timesheet = Timesheet;
-

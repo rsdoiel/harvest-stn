@@ -1,6 +1,11 @@
 
+@tag project1; One Big Company; code review; Lean and Nimble
+@tag project2; BigCo2; code review; Slow and Bumble
+
 2013-09-01
 
 6:00 - 7:00; project1; Worked on this.
 
 3:30 - 6:00; project2; Workded on that.
+
+
