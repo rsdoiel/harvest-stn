@@ -1,5 +1,5 @@
-harvest-import-stn
-==================
+harvest-stn
+===========
 
 A harvest client for importing Simple Timesheet Notation files into a harvest account.
 
