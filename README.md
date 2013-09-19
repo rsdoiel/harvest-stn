@@ -7,7 +7,7 @@ A harvest client for importing Simple Timesheet Notation files into a harvest ac
 
 * [Havest API](https://github.com/harvesthq/api) - examples in Python, Ruby, PHP, etc.
 * [Timesheet API](https://github.com/harvesthq/api/blob/master/Sections/Time%20Tracking.md) - this is what we want
-* [node-harvest](https://github.com/log0ymxm/node-harvest) by Paul English, this could be wrapped to create harvest-import-stn cli
+* [node-harvest](https://github.com/log0ymxm/node-harvest) by Paul English, a Harvest API module
 
 # Our API
 
@@ -24,13 +24,13 @@ A harvest client for importing Simple Timesheet Notation files into a harvest ac
     * getProjectId(project) -- given a text project name return a project_id or false
 * deleteEntry(entry_id)
 
-Notes:
+General Notes:
 
-    Supported Data Formats
+Supported Data Formats
 
-    The Harvest API supports both XML and JSON data formats.
+The Harvest API supports both XML and JSON data formats.
 
-    For an XML request, send application/xml in the Accept and Content-Type headers. Send application/json for JSON responses. All examples in this documentation assume XML input and output, however JSON output follows similar structure to the XML documented.
+For an XML request, send application/xml in the Accept and Content-Type headers. Send application/json for JSON responses. All examples in this documentation assume XML input and output, however JSON output follows similar structure to the XML documented.
 
 
 
