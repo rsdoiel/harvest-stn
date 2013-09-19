@@ -1,22 +1,22 @@
 {
-  "name": "harvest-timesheet",
+  "name": "harvest-stn",
   "version": "0.0.0",
-  "description": "A harvest client for importing content in Simple Timesheet Notation.",
-  "main": "harvest-timesheet.js",
+  "description": "A harvest client for supporting Simple Timesheet Notation.",
+  "main": "harvest-stn.js",
   "bin": {
-    "harvest-timesheet": "./harvest-timesheet.js"
+    "harvest-timesheet": "./harvest-stn.js"
   },
   "scripts": {
-    "test": "node harvest-timesheet_test.js"
+    "test": "node harvest-stn_test.js"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/rsdoiel/harvest-timesheet.git"
+    "url": "git://github.com/rsdoiel/harvest-stn.git"
   },
   "author": "R. S. Doiel, <rsdoiel@usc.edu>",
   "license": "BSD-2-Clause",
   "bugs": {
-    "url": "https://github.com/rsdoiel/harvest-timesheet/issues"
+    "url": "https://github.com/rsdoiel/harvest-stn/issues"
   },
   "dependencies": {
     "stn": "0.0.11",
